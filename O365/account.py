@@ -30,7 +30,7 @@ class Account:
         auth_flow_type = kwargs.get('auth_flow_type', 'authorization')
         scopes = kwargs.get('scopes', None)  # retrieve scopes
 
-        if auth_flow_type in ('authorization', 'public'):
+        if auth_flow_type in ('authorization', 'public', 'legacy'):
             # convert the provided scopes to protocol scopes:
             if scopes is not None:
                 kwargs['scopes'] = self.protocol.get_scopes_for(scopes)
@@ -106,7 +106,7 @@ class Account:
                 print('Authentication Flow aborted.')
                 return False
 
-        elif self.con.auth_flow_type == 'credentials':
+        elif self.con.auth_flow_type in ('credentials', 'legacy'):
             return self.con.request_token(None, requested_scopes=scopes)
         else:
             raise ValueError('Connection "auth_flow_type" must be "authorization", "public" or "credentials"')

@@ -3,7 +3,7 @@ import logging
 import os
 import time
 
-from oauthlib.oauth2 import TokenExpiredError, WebApplicationClient, BackendApplicationClient
+from oauthlib.oauth2 import TokenExpiredError, WebApplicationClient, BackendApplicationClient, LegacyApplicationClient
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError, RequestException, ProxyError
@@ -355,6 +355,8 @@ class Connection:
             - 'authorization': 2 step web style grant flow using an authentication url
             - 'public': 2 step web style grant flow using an authentication url for public apps where
             client secret cannot be secured
+            - 'legacy': 2 step legacy app grant flow for scriptbased automating. Only use when Client 
+            and Sever are 100% trusted
             - 'credentials': also called client credentials grant flow using only the cliend id and secret
         :param float or tuple timeout: How long to wait for the server to send
             data before giving up, as a float, or a tuple (connect timeout, read timeout)
@@ -369,11 +371,14 @@ class Connection:
                 credentials = (credentials,)
             if not isinstance(credentials, tuple) or len(credentials) != 1 or (not credentials[0]):
                 raise ValueError('Provide client id only for public flow credentials')
+        elif auth_flow_type == 'legacy': 
+            if not isinstance(credentials, tuple) or len(credentials) != 4 or (not credentials[0] and not credentials[1] and not credentials[2] and not credentials[3]):
+                raise ValueError('Provide valid client_id, client_secret, user, pass')
         else:
             if not isinstance(credentials, tuple) or len(credentials) != 2 or (not credentials[0] and not credentials[1]):
                 raise ValueError('Provide valid auth credentials')
 
-        self._auth_flow_type = auth_flow_type  # 'authorization' or 'credentials' or 'public'
+        self._auth_flow_type = auth_flow_type  # 'authorization' or 'credentials' or 'public' or 'legacy'
         if auth_flow_type == 'credentials' and tenant_id == 'common':
             raise ValueError('When using the "credentials" auth_flow the "tenant_id" must be set')
 
@@ -500,7 +505,7 @@ class Connection:
             if self.auth_flow_type in ('authorization', 'public'):
                 self.session = self.get_session(state=state,
                                                 redirect_uri=redirect_uri)
-            elif self.auth_flow_type == 'credentials':
+            elif self.auth_flow_type in ('credentials', 'legacy'):
                 self.session = self.get_session(scopes=scopes)
             else:
                 raise ValueError('"auth_flow_type" must be "authorization", "public" or "credentials"')
@@ -522,6 +527,14 @@ class Connection:
                     token_url=self._oauth2_token_url,
                     include_client_id=True,
                     client_secret=self.auth[1],
+                    scope=scopes))
+            elif self.auth_flow_type == 'legacy':
+                self.token_backend.token = Token(self.session.fetch_token(
+                    token_url=self._oauth2_token_url,
+                    include_client_id=True,
+                    client_secret=self.auth[1],
+                    username=self.auth[2],
+                    password=self.auth[3],
                     scope=scopes))
         except Exception as e:
             log.error('Unable to fetch auth token. Error: {}'.format(str(e)))
@@ -553,8 +566,10 @@ class Connection:
             oauth_client = WebApplicationClient(client_id=client_id)
         elif self.auth_flow_type == 'credentials':
             oauth_client = BackendApplicationClient(client_id=client_id)
+        elif self.auth_flow_type == 'legacy':
+            oauth_client = LegacyApplicationClient(client_id=client_id)            
         else:
-            raise ValueError('"auth_flow_type" must be "authorization", "credentials" or "public"')
+            raise ValueError('"auth_flow_type" must be "authorization", "credentials", "public" or "legacy"')
 
         requested_scopes = scopes or self.scopes
 
@@ -565,7 +580,7 @@ class Connection:
                 raise RuntimeError('No auth token found. Authentication Flow needed')
 
             oauth_client.token = token
-            if self.auth_flow_type in ('authorization', 'public'):
+            if self.auth_flow_type in ('authorization', 'public', 'legacy'):
                 requested_scopes = None  # the scopes are already in the token (Not if type is backend)
             session = OAuth2Session(client_id=client_id,
                                     client=oauth_client,
@@ -641,6 +656,16 @@ class Connection:
                     self.session.refresh_token(
                         self._oauth2_token_url,
                         client_id=client_id)
+                )
+            elif self.auth_flow_type == 'legacy':
+                client_id, client_secret, username, password = self.auth
+                self.token_backend.token = Token(
+                    self.session.refresh_token(
+                        self._oauth2_token_url,
+                        client_id=client_id,
+                        client_secret=client_secret,
+                        username=username, 
+                        password=password)
                 )
             elif self.auth_flow_type == 'credentials':
                 if self.request_token(None, store_token=False) is False:
