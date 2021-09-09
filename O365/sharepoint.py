@@ -309,6 +309,8 @@ class SharepointList(ApiComponent):
                 params['$filter'] = query
             else:
                 params.update(query.as_params())
+                order = params.pop('$orderby', False)
+                if order: params['$order'] = order
 
         response = self.con.get(url, params=params)
 
