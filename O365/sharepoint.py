@@ -301,8 +301,7 @@ class SharepointList(ApiComponent):
             params['expand'] = self.build_field_filter(expand_fields)
             
         if order_by:
-            params['$order'] = order_by # Graph does not accept orderby
-            #params['$orderby'] = order_by
+            params['$orderby'] = order_by
 
         if query:
             if isinstance(query, str):
