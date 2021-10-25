@@ -139,24 +139,25 @@ This oauth flow is called **authorization code grant flow**. This is the default
 Same as the former but for public apps where the client secret can't be secured. Client secret is not required.
 - [Authenticate with your own identity](https://docs.microsoft.com/en-us/graph/auth-v2-service?context=graph%2Fapi%2F1.0&view=graph-rest-1.0): 
 This will use your own identity (the app identity). This oauth flow is called **client credentials grant flow**. 
-
     > 'Authenticate with your own identity' is not an allowed method for **Microsoft Personal accounts**. 
+- [Authenticate on behalf of a user (legacy)]:
+Same as [Authenticate on behalf of a user] but for apps which does not support MFA.
 
 When to use one or the other and requirements:
 
-  Topic                             | On behalf of a user *(auth_flow_type=='authorization')*  | On behalf of a user (public) *(auth_flow_type=='public')*  | With your own identity *(auth_flow_type=='credentials')*
- :---:                              | :---:                                                    | :---:                                                      | :---:
- **Register the App**               | Required                                                 | Required                                                   | Required
- **Requires Admin Consent**         | Only on certain advanced permissions                     | Only on certain advanced permissions                       | Yes, for everything
- **App Permission Type**            | Delegated Permissions (on behalf of the user)            | Delegated Permissions (on behalf of the user)              | Application Permissions
- **Auth requirements**              | Client Id, Client Secret, Authorization Code             | Client Id, Authorization Code                              | Client Id, Client Secret
- **Authentication**                 | 2 step authentication with user consent                  | 2 step authentication with user consent                    | 1 step authentication
- **Auth Scopes**                    | Required                                                 | Required                                                   | None
- **Token Expiration**               | 60 Minutes without refresh token or 90 days*             | 60 Minutes without refresh token or 90 days*               | 60 Minutes*
- **Login Expiration**               | Unlimited if there is a refresh token and as long as a re| Unlimited if there is a refresh token and as long as a refresh is done within the 90 days          | Unlimited
- **Resources**                      | Access the user resources, and any shared resources      | Access the user resources, and any shared resources        | All Azure AD users the app has access to
- **Microsoft Account Type**         | Any                                                      | Any                                                        | Not Allowed for Personal Accounts
- **Tenant ID Required**             | Defaults to "common"                                     | Defaults to "common"                                       | Required (can't be "common")
+  Topic                             | On behalf of a user *(auth_flow_type=='authorization')*  | On behalf of a user (public) *(auth_flow_type=='public')*  | With your own identity *(auth_flow_type=='credentials')*  | On behalf of a user *(auth_flow_type=='legacy')*
+ :---:                              | :---:                                                    | :---:                                                      | :---:                                                     | :---:
+ **Register the App**               | Required                                                 | Required                                                   | Required                                                  | Required
+ **Requires Admin Consent**         | Only on certain advanced permissions                     | Only on certain advanced permissions                       | Yes, for everything                                       | Only on certain advanced permissions
+ **App Permission Type**            | Delegated Permissions (on behalf of the user)            | Delegated Permissions (on behalf of the user)              | Application Permissions                                   | Delegated Permissions (on behalf of the user)
+ **Auth requirements**              | Client Id, Client Secret, Authorization Code             | Client Id, Authorization Code                              | Client Id, Client Secret                                  | Client Id, Client Secret, UPN, Password
+ **Authentication**                 | 2 step authentication with user consent                  | 2 step authentication with user consent                    | 1 step authentication                                     | 1 step authentication
+ **Auth Scopes**                    | Required                                                 | Required                                                   | None                                                      | Required
+ **Token Expiration**               | 60 Minutes without refresh token or 90 days*             | 60 Minutes without refresh token or 90 days*               | 60 Minutes*                                               | 60 Minutes without refresh token or 90 days*
+ **Login Expiration**               | Unlimited if there is a refresh token and as long as a refresh is done within the 90 days| Unlimited if there is a refresh token and as long as a refresh is done within the 90 days| Unlimited| Unlimited if there is a refresh token and as long as a refresh is done within the 90 days
+ **Resources**                      | Access the user resources, and any shared resources      | Access the user resources, and any shared resources        | All Azure AD users the app has access to                  | Access the user resources, and any shared resources
+ **Microsoft Account Type**         | Any                                                      | Any                                                        | Not Allowed for Personal Accounts                         | Not Allowed for Personal Accounts
+ **Tenant ID Required**             | Defaults to "common"                                     | Defaults to "common"                                       | Required (can't be "common")                              | Defaults to "common"
 
 **O365 will automatically refresh the token for you on either authentication method. The refresh token lasts 90 days but it's refreshed on each connection so as long as you connect within 90 days you can have unlimited access.*
 
