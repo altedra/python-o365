@@ -140,7 +140,7 @@ class SharepointListItem(ApiComponent):
         # If no parent is given, and no internal fields are defined assume correct, API will check
         return True
 
-    def update_fields(self, updates):
+    def update_fields(self, updates, force=False):
         """
         Update the value for a field(s) in the listitem
 
@@ -148,7 +148,7 @@ class SharepointListItem(ApiComponent):
         """
 
         for field in updates:
-            if self._valid_field(field):
+            if force or self._valid_field(field):
                 self._track_changes.add(field)
             else:
                 raise ValueError('"{}" is not a valid internal field name'.format(field))
